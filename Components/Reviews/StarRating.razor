@@ -1,0 +1,41 @@
+@namespace Univents.Components.Reviews
+
+<div class="inline-flex items-center @(Interactive ? "gap-1.5" : "gap-0.5")" aria-label="@Value out of 5 stars">
+    @for (var i = 1; i <= 5; i++)
+    {
+        var star = i;
+        var isActive = star <= (Interactive ? HoverValue ?? Value : (int)Math.Round(Value));
+
+        if (Interactive)
+        {
+            <button type="button"
+                    aria-label="Rate @star star@(star > 1 ? "s" : "")"
+                    @onclick="() => HandleClick(star)"
+                    @onmouseenter="() => HoverValue = star"
+                    @onmouseleave="() => HoverValue = null"
+                    class="bg-transparent border-0 p-0 leading-none transition-all duration-150 hover:-translate-y-0.5"
+                    style="font-size:@(SizePx)px; color:@(isActive ? ActiveColor : InactiveColor);">
+                &#9733;
+            </button>
+        }
+        else
+        {
+            <span class="leading-none" style="font-size:@(SizePx)px; color:@(isActive ? ActiveColor : InactiveColor);">
+                &#9733;
+            </span>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public double Value { get; set; }
+    [Parameter] public bool Interactive { get; set; }
+    [Parameter] public EventCallback<int> OnChange { get; set; }
+    [Parameter] public int SizePx { get; set; } = 17;
+    [Parameter] public string ActiveColor { get; set; } = "#9db908";
+    [Parameter] public string InactiveColor { get; set; } = "#d3d3cd";
+
+    private int? HoverValue;
+
+    private Task HandleClick(int star) => OnChange.InvokeAsync(star);
+}

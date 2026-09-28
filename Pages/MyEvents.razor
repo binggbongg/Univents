@@ -1,0 +1,70 @@
+@page "/my-events"
+@using Univents.Models
+@using Univents.Data
+@using Univents.Components.Welcome
+@using Univents.Components.MyEvents
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="min-h-screen" style="background:#f5f5f0; font-family:'Inter', sans-serif;">
+
+    <WelcomeNavbar Avatar="@avatar" NotificationCount="0" />
+
+    <div class="max-w-6xl mx-auto px-4 py-8 md:px-8">
+
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+            <div>
+                <span style="color:#73736f; font-family:'Outfit', sans-serif; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">Your history</span>
+                <h1 class="mt-1.5" style="font-family:'Outfit', sans-serif; font-weight:900; font-size:clamp(1.75rem, 3vw, 2.25rem); color:#1a1a1a;">
+                    My Events
+                </h1>
+                <p class="text-sm mt-1.5" style="color:#888;">Events you've attended. Tap one to share your rating and comments.</p>
+            </div>
+
+            <div class="flex items-center gap-3 rounded-xl px-4 py-2.5" style="background:#1a1a1a;">
+                <div class="w-1.5 h-8 rounded-full flex-shrink-0" style="background:#c5e61c;"></div>
+                <div>
+                    <p class="text-sm font-semibold text-white leading-tight" style="font-family:'Outfit', sans-serif;">@myEvents.Count events attended</p>
+                    <p class="text-xs" style="color:#888;">Ready for your review</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attended events grid -->
+        @if (myEvents.Count == 0)
+        {
+            <div class="text-center py-16 rounded-2xl" style="background:#fff; border:2px dashed #e0e0d8;">
+                <p class="text-4xl mb-3">&#128197;</p>
+                <p class="font-semibold text-lg" style="font-family:'Outfit', sans-serif;">No events yet</p>
+                <p class="text-sm mt-1" style="color:#888;">Events you attend will show up here once they're done.</p>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach (var ev in myEvents)
+                {
+                    <MyEventCard Event="ev" />
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<EventItem> myEvents = MyEventsSeedData.MyEvents;
+    private string avatar = "JR";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var name = authState.User.Identity?.Name;
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            avatar = parts.Length > 1
+                ? $"{parts[0][0]}{parts[^1][0]}".ToUpper()
+                : name.Substring(0, Math.Min(2, name.Length)).ToUpper();
+        }
+    }
+}

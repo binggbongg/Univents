@@ -1,0 +1,41 @@
+@namespace Univents.Components.MyEvents
+@using Univents.Models
+
+<a href="/events/@Event.Id/reviews" class="group block rounded-2xl overflow-hidden cursor-pointer transition-transform hover:-translate-y-1" style="background:#ffffff; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <div class="relative overflow-hidden" style="height:140px;">
+        <img src="@Event.Image" alt="@Event.Title" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%);"></div>
+
+        <span class="absolute top-3 left-3 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full" style="background:#1a1a1a; color:#c5e61c; font-family:'Outfit', sans-serif;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6" /></svg>
+            Attended
+        </span>
+
+        <span class="absolute bottom-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full" style="background:@(Event.Color); color:#1a1a1a; font-family:'Outfit', sans-serif;">
+            @Event.Category
+        </span>
+    </div>
+
+    <div class="p-4">
+        <h3 class="font-bold text-sm leading-tight mb-2 line-clamp-2" style="font-family:'Outfit', sans-serif; color:#1a1a1a;">
+            @Event.Title
+        </h3>
+
+        <div class="flex items-center gap-1.5 mb-3">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>
+            <span class="text-xs" style="color:#888;">@Event.Date &middot; @Event.Org</span>
+        </div>
+
+        <div class="flex items-center justify-between pt-3" style="border-top:1px solid #f0f0ed;">
+            <span class="text-xs font-medium" style="color:#888;">@Event.Attending attended</span>
+            <span class="text-xs font-bold inline-flex items-center gap-1" style="color:#1a1a1a;">
+                Write a review
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6m6 6H3" /></svg>
+            </span>
+        </div>
+    </div>
+</a>
+
+@code {
+    [Parameter, EditorRequired] public EventItem Event { get; set; } = null!;
+}

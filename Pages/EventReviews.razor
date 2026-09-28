@@ -1,0 +1,290 @@
+@page "/events/{EventId:int}/reviews"
+@using Univents.Models
+@using Univents.Data
+@using Univents.Components.Welcome
+@using Univents.Components.Reviews
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="min-h-screen" style="background:#f5f5f0; font-family:'Inter', sans-serif;">
+
+    <WelcomeNavbar Avatar="@avatar" NotificationCount="0" />
+
+    @if (ev is null)
+    {
+        <div class="max-w-3xl mx-auto px-4 py-24 text-center">
+            <p class="text-4xl mb-3">&#128269;</p>
+            <p class="font-semibold text-lg" style="font-family:'Outfit', sans-serif;">Event not found</p>
+            <a href="/welcome" class="inline-block mt-4 text-sm font-semibold underline underline-offset-2" style="color:#1a1a1a;">Back to events</a>
+        </div>
+    }
+    else
+    {
+        <!-- Event hero -->
+        <section class="max-w-6xl mx-auto px-4 md:px-8 pt-7 pb-10">
+            <div class="flex items-center gap-2 mb-5" style="color:#73736f; font-size:12px;">
+                <a href="/welcome" style="text-decoration:none;">Events</a>
+                <span>/</span>
+                <span>@ev.Title</span>
+            </div>
+
+            <div class="grid gap-8 lg:grid-cols-2 items-stretch">
+                <div class="flex flex-col justify-center py-2">
+                    <div class="flex items-center gap-2 mb-4" style="color:#73736f; font-family:'Outfit', sans-serif; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">
+                        <span class="inline-block rounded-full" style="width:8px; height:8px; background:@(ev.Color);"></span>
+                        @ev.Category &middot; Hosted by @ev.Org &middot; @(isCompleted ? "Event completed" : "Upcoming")
+                    </div>
+
+                    <h1 class="mb-5" style="font-family:'Outfit', sans-serif; font-weight:900; font-size:clamp(2.25rem, 4vw, 3.25rem); letter-spacing:-0.03em; line-height:1; color:#1a1a1a;">
+                        @ev.Title
+                    </h1>
+
+                    <div class="flex items-center gap-3 mb-5">
+                        <strong style="font-family:'Outfit', sans-serif; font-weight:700; font-size:20px;">@averageRatingLabel</strong>
+                        <StarRating Value="averageRating" ActiveColor="#1a1a1a" />
+                        <a href="#reviews" class="text-sm" style="border-bottom:1px solid #1a1a1a; text-decoration:none; color:#1a1a1a;">@reviews.Count review@(reviews.Count == 1 ? "" : "s")</a>
+                    </div>
+
+                    <div class="flex flex-wrap gap-5 text-sm" style="color:#1a1a1a;">
+                        <span class="inline-flex items-center gap-1.5">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>
+                            @ev.Date &middot; @ev.Time
+                        </span>
+                        <span class="inline-flex items-center gap-1.5">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                            @ev.Attending attending
+                        </span>
+                    </div>
+                </div>
+
+                <figure class="relative rounded-3xl overflow-hidden m-0" style="min-height:300px;">
+                    <img src="@ev.Image" alt="@ev.Title" class="w-full h-full object-cover" style="position:absolute; inset:0;" />
+                    <div class="absolute inset-0" style="background:linear-gradient(0deg, rgba(0,0,0,0.35), transparent 40%);"></div>
+                    <figcaption class="absolute" style="left:16px; bottom:14px; color:rgba(255,255,255,0.85); font-size:11px;">Hosted by @ev.Org</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <!-- Ratings + reviews -->
+        <section id="reviews" class="max-w-6xl mx-auto px-4 md:px-8 pb-20 grid gap-8" style="grid-template-columns: 320px minmax(0, 1fr);">
+
+            <!-- Rating summary sidebar -->
+            <aside class="rounded-3xl p-7 self-start" style="background:#1a1a1a; color:#ffffff; position:sticky; top:84px;">
+                <span style="color:#aaa; font-family:'Outfit', sans-serif; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">Attendee feedback</span>
+                <h2 class="mt-2 mb-6" style="font-family:'Outfit', sans-serif; font-weight:900; font-size:26px; line-height:1.1;">Trusted by the campus community</h2>
+
+                <div class="flex items-center gap-4 mb-6">
+                    <strong style="color:#c5e61c; font-family:'Outfit', sans-serif; font-weight:900; font-size:52px; line-height:1;">@averageRatingLabel</strong>
+                    <div class="grid gap-1">
+                        <StarRating Value="averageRating" />
+                        <span style="color:#aaa; font-size:11px;">Based on @reviews.Count review@(reviews.Count == 1 ? "" : "s")</span>
+                    </div>
+                </div>
+
+                <div class="grid gap-2.5 mb-6">
+                    @foreach (var (score, percent) in ratingBreakdown)
+                    {
+                        <div class="grid items-center" style="grid-template-columns:8px 12px 1fr 30px; gap:8px; color:#bbb; font-size:11px;">
+                            <span>@score</span>
+                            <span style="color:#c5e61c;">&#9733;</span>
+                            <div class="rounded-full overflow-hidden" style="background:#363636; height:6px;">
+                                <span class="block h-full rounded-full" style="width:@(percent)%; background:#c5e61c;"></span>
+                            </div>
+                            <span>@(percent)%</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="flex items-start gap-3 pt-5" style="border-top:1px solid #393939;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c5e61c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><path d="M12 3 5 6v5c0 4.4 2.9 8.3 7 10 4.1-1.7 7-5.6 7-10V6l-7-3Zm-3 9 2 2 4-4" /></svg>
+                    <p style="color:#999; font-size:11px; line-height:1.55; margin:0;">
+                        <strong style="color:#fff;">Reviews you can trust</strong><br />
+                        We label feedback from verified event attendees.
+                    </p>
+                </div>
+            </aside>
+
+            <div class="min-w-0">
+                <!-- Review submission form (only open once the event has happened) -->
+                @if (!isCompleted)
+                {
+                    <div class="rounded-3xl p-7 mb-9 text-center" style="background:#ffffff; border:2px dashed #e0e0d8;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                        <p class="font-semibold" style="font-family:'Outfit', sans-serif; font-size:15px;">Reviews open once the event has happened</p>
+                        <p class="text-sm mt-1" style="color:#888;">Come back after @ev.Title wraps up to share your rating and comments.</p>
+                    </div>
+                }
+                else
+                {
+                <form @onsubmit="SubmitReview" @onsubmit:preventDefault="true" class="rounded-3xl p-7 mb-9" style="background:#ffffff; box-shadow:0 2px 10px rgba(26,26,26,0.06);">
+                    <div class="flex items-start justify-between gap-5 flex-wrap mb-6">
+                        <div>
+                            <span style="color:#73736f; font-family:'Outfit', sans-serif; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">Share your experience</span>
+                            <h2 class="mt-1.5" style="font-family:'Outfit', sans-serif; font-weight:900; font-size:26px;">How was the event?</h2>
+                        </div>
+                        <StarRating Value="rating" Interactive="true" SizePx="28" OnChange="HandleRatingChange" />
+                    </div>
+
+                    <label for="comment" class="block mb-2" style="font-weight:600; font-size:12px;">Your review</label>
+                    <textarea id="comment" rows="5" maxlength="500" placeholder="Tell others about the vibe, organization, or anything that stood out..."
+                              value="@comment" @oninput="HandleCommentInput"
+                              class="w-full rounded-xl p-4 outline-none resize-y transition-all"
+                              style="background:#fafaf7; border:1px solid #deded8; color:#1a1a1a;"></textarea>
+
+                    <div class="flex items-center justify-between mt-3">
+                        <span style="color:#aaa; font-size:11px;">@(comment.Length)/500 characters</span>
+                        <button type="submit" disabled="@(rating == 0 || string.IsNullOrWhiteSpace(comment))"
+                                class="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 transition-colors"
+                                style="font-family:'Outfit', sans-serif; font-weight:700; background:@((rating == 0 || string.IsNullOrWhiteSpace(comment)) ? "#e5e5df" : "#c5e61c"); color:@((rating == 0 || string.IsNullOrWhiteSpace(comment)) ? "#9a9a94" : "#1a1a1a"); cursor:@((rating == 0 || string.IsNullOrWhiteSpace(comment)) ? "not-allowed" : "pointer");">
+                            Post review
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6m6 6H3" /></svg>
+                        </button>
+                    </div>
+
+                    @if (submitted)
+                    {
+                        <p class="flex items-center gap-1.5 mt-3.5" style="color:#607300; font-size:12px; font-weight:500;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6" /></svg>
+                            Thanks — your review has been posted.
+                        </p>
+                    }
+                </form>
+                }
+
+                <!-- List controls -->
+                <div class="flex items-end justify-between gap-4 flex-wrap mb-4">
+                    <div>
+                        <span style="color:#73736f; font-family:'Outfit', sans-serif; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">What attendees say</span>
+                        <h2 class="mt-1.5" style="font-family:'Outfit', sans-serif; font-weight:900; font-size:26px;">
+                            Attendee reviews
+                            <span class="inline-flex items-center justify-center rounded-full ml-1" style="background:#c5e61c; font-family:'Outfit', sans-serif; font-weight:700; font-size:11px; height:24px; min-width:24px; padding:0 7px; vertical-align:4px;">@reviews.Count</span>
+                        </h2>
+                    </div>
+                    <label class="inline-flex items-center gap-2" style="color:#73736f; font-size:11px;">
+                        <span>Sort by</span>
+                        <select value="@sort" @onchange="HandleSortChange"
+                                class="rounded-lg px-3 py-2 outline-none cursor-pointer"
+                                style="background:#ffffff; border:1px solid #deded8; color:#1a1a1a;">
+                            @foreach (var option in EventReviewSeedData.SortOptions)
+                            {
+                                <option value="@option">@option</option>
+                            }
+                        </select>
+                    </label>
+                </div>
+
+                <!-- Review list -->
+                @if (reviews.Count == 0)
+                {
+                    <div class="text-center py-16 rounded-2xl" style="background:#fff; border:2px dashed #e0e0d8;">
+                        <p class="text-4xl mb-3">&#128172;</p>
+                        <p class="font-semibold text-lg" style="font-family:'Outfit', sans-serif;">No reviews yet</p>
+                        <p class="text-sm mt-1" style="color:#888;">Be the first to share how the event went.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="grid gap-3">
+                        @foreach (var review in sortedReviews)
+                        {
+                            <ReviewCard Review="review" IsHelpful="helpfulIds.Contains(review.Id)" OnToggleHelpful="ToggleHelpful" />
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter] public int EventId { get; set; }
+
+    private EventItem? ev;
+    private List<ReviewItem> reviews = new();
+    private List<(int Score, int Percent)> ratingBreakdown = new();
+    private HashSet<int> helpfulIds = new();
+
+    private int rating;
+    private string comment = string.Empty;
+    private string sort = "Most recent";
+    private bool submitted;
+    private string avatar = "JR";
+
+    private List<ReviewItem> sortedReviews => sort switch
+    {
+        "Highest rated" => reviews.OrderByDescending(r => r.Rating).ToList(),
+        "Most helpful" => reviews.OrderByDescending(r => r.Helpful + (helpfulIds.Contains(r.Id) ? 1 : 0)).ToList(),
+        _ => reviews,
+    };
+
+    private double averageRating => reviews.Count == 0 ? 0 : Math.Round(reviews.Average(r => r.Rating), 1);
+    private string averageRatingLabel => reviews.Count == 0 ? "—" : averageRating.ToString("0.0");
+    private bool isCompleted => ev?.Status == "Completed";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Events can come from the general discovery feed (WelcomeSeedData)
+        // or from the user's own attended-events list (MyEventsSeedData).
+        ev = WelcomeSeedData.Events.Concat(MyEventsSeedData.MyEvents).FirstOrDefault(e => e.Id == EventId);
+        reviews = EventReviewSeedData.GetReviewsForEvent(EventId);
+        ratingBreakdown = EventReviewSeedData.GetRatingBreakdown(reviews);
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var name = authState.User.Identity?.Name;
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            avatar = parts.Length > 1
+                ? $"{parts[0][0]}{parts[^1][0]}".ToUpper()
+                : name.Substring(0, Math.Min(2, name.Length)).ToUpper();
+        }
+    }
+
+    private void HandleRatingChange(int value)
+    {
+        rating = value;
+        submitted = false;
+    }
+
+    private void HandleCommentInput(ChangeEventArgs e)
+    {
+        comment = e.Value?.ToString() ?? string.Empty;
+        submitted = false;
+    }
+
+    private void HandleSortChange(ChangeEventArgs e)
+    {
+        sort = e.Value?.ToString() ?? "Most recent";
+    }
+
+    private void ToggleHelpful(int reviewId)
+    {
+        if (!helpfulIds.Add(reviewId)) helpfulIds.Remove(reviewId);
+    }
+
+    private void SubmitReview()
+    {
+        if (rating == 0 || string.IsNullOrWhiteSpace(comment)) return;
+
+        var newReview = new ReviewItem
+        {
+            Id = (reviews.Count == 0 ? 0 : reviews.Max(r => r.Id)) + 1,
+            EventId = EventId,
+            Name = avatar == "JR" ? "You" : avatar,
+            Avatar = avatar,
+            AvatarColor = "#c5e61c",
+            Date = "Just now",
+            Rating = rating,
+            Title = "My experience",
+            Text = comment.Trim(),
+            Helpful = 0,
+            Verified = true,
+        };
+
+        reviews = new List<ReviewItem> { newReview }.Concat(reviews).ToList();
+        ratingBreakdown = EventReviewSeedData.GetRatingBreakdown(reviews);
+
+        comment = string.Empty;
+        rating = 0;
+        submitted = true;
+    }
+}
